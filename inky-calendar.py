@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from os import path, DirEntry
+import os
 import sys
 import math
 import calendar
@@ -10,11 +11,14 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from inky.inky_uc8159 import Inky, BLACK, WHITE, GREEN, RED, YELLOW, ORANGE, BLUE
 
 inky = Inky()
-saturation = 0.5
+saturation = 1
+type = 'css'
+
+paths = os.path.dirname(os.path.realpath(__file__))
 
 # font files
-titleFontFile = "fonts/Roboto-BlackItalic.ttf"
-detailFontFile = "fonts/Roboto-Black.ttf"
+titleFontFile = paths+"/fonts/Roboto-BlackItalic.ttf"
+detailFontFile = paths+"/fonts/Roboto-Black.ttf"
 
 # latest update timestamp.
 latest_calendar_update = datetime.now() # no need to set current time, just for initial.
@@ -26,7 +30,7 @@ class dayInfo:
         self.rect = rect
         self.borderColor = borderColor
         self.fillColor = fillColor
-        self.emphsize = False
+        self.emphsize = True
         self.events = events
         self.specialImage = None
 
@@ -38,9 +42,9 @@ def drawTitle(image, targetDate, calendarRows, boxSize):
     draw = ImageDraw.Draw(image)
     monthString = targetDate.strftime("%B")
     yearString = targetDate.strftime("%Y")
-    #weekdayString = targetDate.strftime("%A")
-    #if date.today() == targetDate:
-    #    monthString = targetDate.strftime("%B %d")
+    weekdayString = targetDate.strftime("%A")
+    if date.today() == targetDate:
+        monthString = targetDate.strftime("%d-%B")
 
 
     titleTextAnchor = "la"
@@ -61,50 +65,48 @@ def drawTitle(image, targetDate, calendarRows, boxSize):
             titleOffsetY = 445
 
         # split it to 2 rows
-        draw.text((titleOffsetX, titleOffsetY - 30), monthString, (0,0,0),font=monthFont, anchor=titleTextAnchor)
-        draw.text((titleOffsetX, titleOffsetY), yearString, (0,0,0),font=yearFont, anchor=titleTextAnchor)
+        draw.text((titleOffsetX, titleOffsetY), monthString, (0,0,0),font=monthFont, anchor=titleTextAnchor)
+        draw.text((titleOffsetX-50, titleOffsetY-50), yearString, (0,0,0),font=yearFont, anchor=titleTextAnchor)
 
     elif fitstDayOfTheMonth.weekday() <= 3:
-        titleOffsetY = 40
+        titleOffsetY = 0
         titleYearOffsetY = 0
 
         monthFont = ImageFont.truetype(titleFontFile, 32)
         yearFont = ImageFont.truetype(titleFontFile, 24)
 
         if fitstDayOfTheMonth.weekday() == 2:
-            titleOffsetY = 50
-            titleYearOffsetY = 10
+            titleOffsetY = 0
+            titleYearOffsetY = 0
             monthFont = ImageFont.truetype(titleFontFile, 36)
             yearFont = ImageFont.truetype(titleFontFile, 28)
             
 
         if fitstDayOfTheMonth.weekday() == 3:
-            titleOffsetY = 55
-            titleYearOffsetY = 6
-            monthFont = ImageFont.truetype(titleFontFile, 46)
+            titleOffsetY = 0
+            titleYearOffsetY = 0
+            monthFont = ImageFont.truetype(titleFontFile, 36)
             yearFont = ImageFont.truetype(titleFontFile, 28)
             
 
         # split it to 2 rows
-        draw.text((titleOffsetX, titleOffsetY - monthFont.size), monthString, (0,0,0),font=monthFont, anchor=titleTextAnchor)
+        #draw.text((titleOffsetX, titleOffsetY - monthFont.size), monthString, (0,0,0),font=monthFont, anchor=titleTextAnchor)
 
         
         if fitstDayOfTheMonth.weekday() == 1:
-            draw.text((titleOffsetX, titleOffsetY + 56), yearString, (0,0,0),font=yearFont, anchor=titleTextAnchor)
-            
+            draw.text((titleOffsetX, titleOffsetY + 56), monthString+'/'+yearString, (0,0,0),font=yearFont, anchor=titleTextAnchor)
             dayFont = ImageFont.truetype(titleFontFile, 56)
             if date.today() == targetDate:
                 draw.text((titleOffsetX, titleOffsetY), str(targetDate.day), (0,0,0),font=dayFont, anchor=titleTextAnchor)
         elif fitstDayOfTheMonth.weekday() == 2:
             titlePosX = boxSize[0] * 2
-            draw.text((titlePosX, titleOffsetY + 56), yearString, (0,0,0),font=yearFont, anchor="rb")
-            
+            draw.text((titlePosX, titleOffsetY), monthString+'-'+yearString, (0,0,255,255),font=yearFont, anchor="rb")
             dayFont = ImageFont.truetype(titleFontFile, 56)
-            if date.today() == targetDate:
-                draw.text((titleOffsetX, titleOffsetY), str(targetDate.day), (0,0,0),font=dayFont, anchor=titleTextAnchor)
+            #if date.today() == targetDate:
+                #draw.text((titleOffsetX, titleOffsetY), str(targetDate.day), (0,0,0),font=dayFont, anchor=titleTextAnchor)
         else:
             titlePosX = boxSize[0] * fitstDayOfTheMonth.weekday()
-            draw.text((titlePosX, titleOffsetY + titleYearOffsetY), yearString, (0,0,0),font=yearFont, anchor="ra")
+            draw.text((0, 0), yearString, (0,0,0),font=yearFont, anchor="rb")
 
     else:
         fontSize = 48
@@ -167,7 +169,7 @@ def drawCalendar(image, targetDate=date.today(),borderColor=(0,0,0), fillColor=(
     for days in weeks:
         xIndex = 0 
         for day in days:
-            fillColor = (255, 255, 255) # defaulting the box background color
+            fillColor = (255, 255, 255, 255) # defaulting the box background color
             eventList = [] # blank..
 
             info = dayInfo(image, day, (
@@ -180,13 +182,16 @@ def drawCalendar(image, targetDate=date.today(),borderColor=(0,0,0), fillColor=(
                 events=eventList)
 
             if(day.weekday() == 5): # Sat
-                info.fillColor = (200, 200, 255)
+                info.fillColor = (0, 0, 255, 255)
+                info.borderColor = (0, 0, 255, 255)
             if(day.weekday() == 6): # Sun
-                info.fillColor = (255, 200, 200)
+                info.fillColor = (0, 0 , 255, 255)
+                info.borderColor = (0, 0, 255, 255)
 
             if(date.today() == day): # today
-                #info.fillColor = (250, 229, 117)
+                info.fillColor = (255, 0, 0, 255)
                 info.emphsize = True            
+                info.borderColor = (255, 0, 0, 255)
             
             # draw box when month is matching to current month.
             if(day.month == targetMonth):
@@ -194,17 +199,17 @@ def drawCalendar(image, targetDate=date.today(),borderColor=(0,0,0), fillColor=(
                 # check if there is special image for the day. (If you wish to use jpeg format, change here.)
 
                 # image for every month
-                pathOfImage = 'images/special_days/'+ day.strftime("%d") + ".png"
+                pathOfImage = paths+'/images/special_days/'+ day.strftime("%d") + ".png"
                 if path.isfile(pathOfImage) == True:
                     info.specialImage = pathOfImage
 
                 # image for specific month
-                pathOfImage = 'images/special_days/'+ day.strftime("%m%d") + ".png"
+                pathOfImage = paths+'/images/special_days/'+ day.strftime("%m%d") + ".png"
                 if path.isfile(pathOfImage) == True:
                     info.specialImage = pathOfImage
 
                 # image for specific year and month
-                pathOfImage = 'images/special_days/'+ day.strftime("%Y%m%d") + ".png"
+                pathOfImage = paths+'/images/special_days/'+ day.strftime("%Y%m%d") + ".png"
                 if path.isfile(pathOfImage) == True:
                     info.specialImage = pathOfImage
 
@@ -215,7 +220,8 @@ def drawCalendar(image, targetDate=date.today(),borderColor=(0,0,0), fillColor=(
         calendarRow = calendarRow + 1
 
 def drawBox(info):
-    draw = ImageDraw.Draw(info.image, "RGBA")
+
+    draw = ImageDraw.Draw(info.image, "RGB")
 
     # if user put a images under images/special_days/MMDD.png, draw it on the box.
     if info.specialImage != None:
@@ -239,11 +245,16 @@ def drawBox(info):
     # offset for events
     offsetY = 20
     if(info.emphsize == True):
-        draw.rectangle((info.rect[0] + 1, info.rect[1] + 1, info.rect[2] - 1, info.rect[1] + 22), fill=(0,0,0,255), outline=(0,0,0,255))
-        draw.text((info.rect[0] + 6, info.rect[1] + 4), str(info.date.day) , (255,255,255,255),font=dayFont)
+        dayname = info.date
+        dayname = calendar.day_abbr[dayname.weekday()]
+        draw.rectangle((info.rect[0] + 1, info.rect[1] + 1, info.rect[2] - 1, info.rect[1] + 22), fill=(255,140,0,255), outline=(0,0,0,255))
+        draw.text((info.rect[0] + 6, info.rect[1] + 4), str(dayname) + ' ' + str(info.date.day) , (0,0,0 ,255),font=dayFont)
     else:
-        draw.text((info.rect[0] + 6, info.rect[1] + 4), str(info.date.day) , (0,0,0, 255),font=dayFont)
+        dayname = info.date
+        dayname = calendar.day_abbr[dayname.weekday()]
+        draw.text((info.rect[0] + 6, info.rect[1] + 4), str(dayname)+ ' ' + str(info.date.day) , (0,0,0, 255),font=dayFont)
     #print("day : " + str(info.date.day) + " pos x:" + str(info.rect[0]) + " y:" + str(info.rect[1]) + " height " + str(info.rect[2]) + " width " + str(info.rect[3]))
+    #print(str(info.date.))
     if(len(info.events) != 0):
         for ev in info.events:
             draw.text((info.rect[0] + 4, info.rect[1] + offsetY), str(ev.start.hour) , (60,60,60),font=timeFont)
@@ -252,8 +263,8 @@ def drawBox(info):
 
 
 def update():
-    background = Image.open("images/background.jpg")
-    foreground = Image.open("images/title_cover.png") # cover top white thing
+    background = Image.open(paths+"/images/white.png")
+    foreground = Image.open(paths+"/images/title_cover.png") # cover top white thing
     background.paste(foreground, (0, 0), foreground)
 
     # draw calendar
@@ -264,6 +275,7 @@ def update():
 
     # update inky impression
     inky.set_image(background, saturation=saturation)
+    #inky.set_image(background)
     inky.show()
 
 # generate calendar images for the year, this frunction is just for fun.
